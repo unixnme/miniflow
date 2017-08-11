@@ -83,6 +83,26 @@ class Sigmoid(Layer):
         super(Sigmoid, self).backward()
         self.grad[self.x] = self.value * (1 - self.value)
 
+class Softmax(Layer):
+    def __init__(self, x):
+        super(Softmax, self).__init__([x])
+        self.x = x
+
+    def forward(self):
+        self.exp = np.exp(self.x.value)
+        self.sum = np.sum(self.exp, axis=-1)
+        self.value = self.exp
+        for idx in range(len(self.value)):
+            self.value[idx] /= self.sum[idx]
+
+    def backward(self):
+        super(Softmax, self).backward()
+        # (N, m)
+        self.grad[self.x] = np.zeros_like(self.grad_cost)
+        for idx in range(len(self.value)):
+            temp = -np.dot(self.value[idx], self.value[idx].T)
+            temp += np.diag(self.value[idx])
+            self.grad[self.x][idx] = np.dot(self.grad_cost[idx].reshape(1, -1), temp)
 
 def topological_sort(feed_dict):
     """
