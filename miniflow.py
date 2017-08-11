@@ -20,9 +20,12 @@ class Layer(object):
 
     def backward(self):
         # set self.grad_cost
-        self.grad_cost = 0
-        for node in self.outbound_nodes:
-            self.grad_cost += node.grad[self]
+        if len(self.outbound_nodes) == 0:
+            self.grad_cost = 1
+        else:
+            self.grad_cost = 0
+            for node in self.outbound_nodes:
+                self.grad_cost += node.grad[self]
         # initialize self.grad
         self.grad = {}
 
@@ -59,8 +62,8 @@ class Linear(Layer):
 class MSE(Layer):
     def __init__(self, pred, true):
         super(MSE, self).__init__([pred, true])
-        self.pred = self.inbound_nodes[0]
-        self.true = self.inbound_nodes[1]
+        self.pred = pred
+        self.true = true
 
     def forward(self):
         self.diff = self.pred.value - self.true.value
@@ -68,8 +71,45 @@ class MSE(Layer):
 
     def backward(self):
         super(MSE, self).backward()
-        self.grad[self.pred] = self.diff / self.pred.value.shape[0]
+        self.grad[self.pred] = self.grad_cost * self.diff / self.pred.value.shape[0]
         self.grad[self.true] = -self.grad[self.pred]
+
+class CategoricalCrossentropy(Layer):
+    def __init__(self, pred, true):
+        super(CategoricalCrossentropy, self).__init__([pred, true])
+        self.pred = pred
+        self.true = true
+
+    def forward(self):
+        self.value = -np.mean(self.true.value * np.log(self.pred.value))
+
+    def backward(self):
+        super(CategoricalCrossentropy, self).backward()
+        # (N, n)
+        self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
+        self.grad[self.pred] = np.clip(self.grad[self.pred], -1, 1)
+        self.grad[self.true] = - self.grad_cost * np.log(self.pred.value)
+
+class CategoricalCrossentropyWithLogit(Layer):
+    def __init__(self, pred, true):
+        super(CategoricalCrossentropyWithLogit, self).__init__([pred, true])
+        self.pred = pred
+        self.true = true
+
+    def forward(self):
+        self.softmax = Softmax(self.pred)
+        self.pred.outbound_nodes.pop(-1)
+        self.softmax.forward()
+        self.value = -np.mean(self.true.value * np.log(self.softmax.value))
+
+    def backward(self):
+        super(CategoricalCrossentropyWithLogit, self).backward()
+        self.grad[self.pred] = self.grad_cost * (self.softmax.value - self.true.value)
+        self.grad[self.true] = self.grad_cost * np.log(self.softmax.value)
+
+        # # (N, n)
+        # self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
+        # self.grad[self.true] = - np.log(self.pred.value)
 
 class Sigmoid(Layer):
     def __init__(self, x):
@@ -178,4 +218,4 @@ def sgd_update(trainables, learning_rate=1e-2):
         # multiplied by the partial of the cost with respect to this
         # trainable.
         partial = t.grad_cost
-        t.value -= learning_rate * partial
+        t.value -= np.clip(learning_rate * partial, -1, 1)

@@ -2,6 +2,8 @@ import miniflow as mf
 import numpy as np
 import keras
 
+np.random.seed(0)
+
 num_classes = 10
 (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
 
@@ -22,8 +24,8 @@ X, Y = mf.Input(), mf.Input()
 W, b = mf.Input(), mf.Input()
 
 linear = mf.Linear(X, W, b)
-activation = mf.Softmax(linear)
-cost = mf.MSE(activation, Y)
+# activation = mf.Softmax(linear)
+cost = mf.CategoricalCrossentropyWithLogit(linear, Y)
 
 def get_batches(x, y, batch_size):
     num_samples = len(x)
@@ -57,7 +59,7 @@ for epoch in range(epochs):
         }
         graph = mf.topological_sort(feed_dict)
         mf.forward_and_backward(graph)
-        mf.sgd_update(trainables)
+        mf.sgd_update(trainables, learning_rate=1e-4)
         loss += graph[-1].value
         pred = np.argmax(linear.value, axis=-1)
         true = np.argmax(y, axis=-1)
