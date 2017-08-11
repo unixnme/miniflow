@@ -95,14 +95,13 @@ class Softmax(Layer):
         self.sum = np.sum(self.exp, axis=-1)
         self.value = self.exp
         for idx in range(len(self.value)):
-            if self.sum[idx] == 0:
-                pass
             self.value[idx] /= self.sum[idx]
 
     def backward(self):
         super(Softmax, self).backward()
         # (N, m)
         self.grad[self.x] = np.zeros_like(self.grad_cost)
+        # TODO: make it more efficient
         for idx in range(len(self.value)):
             temp = -np.dot(self.value[idx], self.value[idx].T)
             temp += np.diag(self.value[idx])
