@@ -89,10 +89,14 @@ class Softmax(Layer):
         self.x = x
 
     def forward(self):
-        self.exp = np.exp(self.x.value)
+        # numerically-stable operation
+        self.min = np.min(self.x.value, axis=-1)
+        self.exp = np.exp(self.x.value.T - self.min.T).T
         self.sum = np.sum(self.exp, axis=-1)
         self.value = self.exp
         for idx in range(len(self.value)):
+            if self.sum[idx] == 0:
+                pass
             self.value[idx] /= self.sum[idx]
 
     def backward(self):
