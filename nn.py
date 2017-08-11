@@ -46,6 +46,7 @@ gen = get_batches(x_train, y_train_hot, batch_size)
 trainables = [W, b]
 for epoch in range(epochs):
     loss = 0
+    correct = 0.
     for step in range(steps_per_epoch):
         x,y = next(gen)
         feed_dict = {
@@ -58,5 +59,26 @@ for epoch in range(epochs):
         mf.forward_and_backward(graph)
         mf.sgd_update(trainables)
         loss += graph[-1].value
+        pred = np.argmax(linear.value, axis=-1)
+        true = np.argmax(y, axis=-1)
+        correct += np.sum(pred == true)
 
     print("Epoch: {}, Loss: {:.3f}".format(epoch + 1, loss / steps_per_epoch))
+    print "Accuracy:", correct / len(x_train) * 100.
+
+    # calculate validation loss and accuracy
+    feed_dict = {
+        X: x_test,
+        Y: y_test_hot,
+        W: W_,
+        b: b_,
+    }
+    graph = mf.topological_sort(feed_dict)
+    mf.forward_and_backward(graph)
+    pred = np.argmax(linear.value, axis=-1)
+    true = np.argmax(y_test_hot, axis=-1)
+    print 'validation loss:', graph[-1].value
+    print 'validation accuracy:', float(np.sum(pred==true)) / len(x_test) * 100
+    print
+
+pass
