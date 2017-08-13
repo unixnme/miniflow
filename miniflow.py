@@ -97,15 +97,13 @@ class CategoricalCrossentropyWithLogit(Layer):
         self.true = true
 
     def forward(self):
-        self.softmax = Softmax(self.pred)
-        self.pred.outbound_nodes.pop(-1)
-        self.softmax.forward()
-        self.value = -np.mean(self.true.value * np.log(self.softmax.value))
+        self.softmax = Softmax.eval(self.pred.value)
+        self.value = -np.mean(self.true.value * np.log(self.softmax))
 
     def backward(self):
         super(CategoricalCrossentropyWithLogit, self).backward()
-        self.grad[self.pred] = self.grad_cost * (self.softmax.value - self.true.value)
-        self.grad[self.true] = self.grad_cost * np.log(self.softmax.value)
+        self.grad[self.pred] = self.grad_cost * (self.softmax- self.true.value)
+        self.grad[self.true] = self.grad_cost * np.log(self.softmax)
 
         # # (N, n)
         # self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
@@ -116,8 +114,12 @@ class Sigmoid(Layer):
         super(Sigmoid, self).__init__([x])
         self.x = x
 
+    @classmethod
+    def eval(cls, x):
+        return 1 / (1 + np.exp(-x))
+
     def forward(self):
-        self.value = 1 / (1 + np.exp(-self.x.value))
+        self.value = self.eval(self.x.value)
 
     def backward(self):
         super(Sigmoid, self).backward()
@@ -128,14 +130,19 @@ class Softmax(Layer):
         super(Softmax, self).__init__([x])
         self.x = x
 
-    def forward(self):
+    @classmethod
+    def eval(cls, x):
         # numerically-stable operation
-        self.min = np.min(self.x.value, axis=-1)
-        self.exp = np.exp(self.x.value.T - self.min.T).T
-        self.sum = np.sum(self.exp, axis=-1)
-        self.value = self.exp
-        for idx in range(len(self.value)):
-            self.value[idx] /= self.sum[idx]
+        min = np.min(x, axis=-1)
+        exp = np.exp(x.T - min.T).T
+        sum = np.sum(exp, axis=-1)
+        value = exp
+        for idx in range(len(value)):
+            value[idx] /= sum[idx]
+        return value
+
+    def forward(self):
+        self.value = self.eval(self.x.value)
 
     def backward(self):
         super(Softmax, self).backward()
