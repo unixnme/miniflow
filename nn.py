@@ -38,7 +38,7 @@ def get_batches(x, y, batch_size):
             yield x[keys], y[keys]
 
 epochs = 100
-batch_size = 100
+batch_size = 2
 steps_per_epoch = int(np.ceil(len(x_train) / float(batch_size)))
 W_ = np.random.randn(28*28, num_classes)
 b_ = np.random.randn(num_classes)

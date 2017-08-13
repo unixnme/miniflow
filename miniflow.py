@@ -87,7 +87,6 @@ class CategoricalCrossentropy(Layer):
         super(CategoricalCrossentropy, self).backward()
         # (N, n)
         self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
-        self.grad[self.pred] = np.clip(self.grad[self.pred], -1, 1)
         self.grad[self.true] = - self.grad_cost * np.log(self.pred.value)
 
 class CategoricalCrossentropyWithLogit(Layer):
@@ -102,7 +101,7 @@ class CategoricalCrossentropyWithLogit(Layer):
 
     def backward(self):
         super(CategoricalCrossentropyWithLogit, self).backward()
-        self.grad[self.pred] = self.grad_cost * (self.softmax- self.true.value)
+        self.grad[self.pred] = self.grad_cost * (self.softmax - self.true.value)
         self.grad[self.true] = self.grad_cost * np.log(self.softmax)
 
         # # (N, n)
@@ -150,7 +149,8 @@ class Softmax(Layer):
         self.grad[self.x] = np.zeros_like(self.grad_cost)
         # TODO: make it more efficient
         for idx in range(len(self.value)):
-            temp = -np.dot(self.value[idx], self.value[idx].T)
+            x = self.value[idx].reshape(-1, 1)
+            temp = -np.dot(x, x.T)
             temp += np.diag(self.value[idx])
             self.grad[self.x][idx] = np.dot(self.grad_cost[idx].reshape(1, -1), temp)
 
