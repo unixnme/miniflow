@@ -89,9 +89,9 @@ class CategoricalCrossentropy(Layer):
         self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
         self.grad[self.true] = - self.grad_cost * np.log(self.pred.value)
 
-class CategoricalCrossentropyWithLogit(Layer):
+class CategoricalCrossentropyWithSoftmax(Layer):
     def __init__(self, pred, true):
-        super(CategoricalCrossentropyWithLogit, self).__init__([pred, true])
+        super(CategoricalCrossentropyWithSoftmax, self).__init__([pred, true])
         self.pred = pred
         self.true = true
 
@@ -100,13 +100,9 @@ class CategoricalCrossentropyWithLogit(Layer):
         self.value = -np.mean(self.true.value * np.log(self.softmax))
 
     def backward(self):
-        super(CategoricalCrossentropyWithLogit, self).backward()
+        super(CategoricalCrossentropyWithSoftmax, self).backward()
         self.grad[self.pred] = self.grad_cost * (self.softmax - self.true.value)
         self.grad[self.true] = self.grad_cost * np.log(self.softmax)
-
-        # # (N, n)
-        # self.grad[self.pred] = - self.grad_cost * self.true.value / self.pred.value
-        # self.grad[self.true] = - np.log(self.pred.value)
 
 class Sigmoid(Layer):
     def __init__(self, x):

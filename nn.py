@@ -25,7 +25,7 @@ W, b = mf.Input(), mf.Input()
 
 linear = mf.Linear(X, W, b)
 # activation = mf.Softmax(linear)
-cost = mf.CategoricalCrossentropyWithLogit(linear, Y)
+cost = mf.CategoricalCrossentropyWithSoftmax(linear, Y)
 
 def get_batches(x, y, batch_size):
     num_samples = len(x)
@@ -38,7 +38,7 @@ def get_batches(x, y, batch_size):
             yield x[keys], y[keys]
 
 epochs = 100
-batch_size = 2
+batch_size = 100
 steps_per_epoch = int(np.ceil(len(x_train) / float(batch_size)))
 W_ = np.random.randn(28*28, num_classes)
 b_ = np.random.randn(num_classes)
